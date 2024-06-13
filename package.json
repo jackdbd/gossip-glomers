@@ -1,0 +1,29 @@
+{
+  "name": "gossip-glomers",
+  "version": "0.1.0",
+  "description": "My solutions to the Gossip Glomers distributed systems challenges.",
+  "license": "MIT",
+  "author": "Giacomo Debidda <giacomo@giacomodebidda.com> (https://giacomodebidda.com/)",
+  "keywords": [
+    "distributed-systems",
+    "gossip-glomers",
+    "jepsen",
+    "maelstrom"
+  ],
+  "type": "module",
+  "scripts": {
+    "maelstrom:serve": "./maelstrom/maelstrom serve",
+    "sea:echo": "node sea.mjs solutions/nodejs/echo.js",
+    "solution:echo": "./maelstrom/maelstrom test -w echo --bin ./solutions/nodejs/echo.js --node-count 3 --time-limit 15"
+  },
+  "dependencies": {
+    "@thi.ng/atom": "^5.3.0",
+    "@thi.ng/compose": "^3.0.4",
+    "@thi.ng/random": "^3.8.0",
+    "debug": "^4.3.5",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "esbuild": "^0.21.5"
+  }
+}

@@ -1,17 +1,5 @@
-# This file is for zig-specific build artifacts.
-# If you have OS-specific or editor-specific files to ignore,
-# such as *.swp or .DS_Store, put those in your global
-# ~/.gitignore and put this in your ~/.gitconfig:
-#
-# [core]
-#     excludesfile = ~/.gitignore
-#
-# Cheers!
-# -andrewrk
-
 .zig-cache/
 zig-cache/
-
 zig-out/
 
 /build/
@@ -19,3 +7,15 @@ zig-out/
 /debug/
 /docgen_tmp/
 /release/
+
+# Maelstrom should be downloaded and not committed to this repo
+maelstrom/
+
+# Node.js dependencies
+node_modules/
+
+# Node.js Single Executable Applications
+solutions/nodejs-sea/
+
+# Maelstrom stores its test results in the store directory
+store/

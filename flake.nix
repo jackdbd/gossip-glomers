@@ -8,7 +8,11 @@
     zig2nix.url = "github:Cloudef/zig2nix";
   };
 
-  outputs = {zig2nix, ...}: let
+  outputs = {
+    zig2nix,
+    self,
+    ...
+  }: let
     flake-utils = zig2nix.inputs.flake-utils;
   in (flake-utils.lib.eachDefaultSystem (system: let
     # Zig flake helper
@@ -18,6 +22,7 @@
       # zig = zig2nix.outputs.packages.${system}.zig.default.bin;
       zig = zig2nix.outputs.packages.${system}.zig.master.bin;
     };
+
     system-triple = env.lib.zigTripleFromString system;
   in
     with builtins;
@@ -69,14 +74,17 @@
       # nix run .#build
       apps.build = env.app [] "zig build \"$@\"";
 
-      # nix run .#test
-      apps.test = env.app [] "zig build test -- \"$@\"";
+      # nix run .#challenge-1
+      apps.challenge-1 = env.app [] "zig build challenge-1 -- \"$@\"";
+
+      # nix run .#deps
+      apps.deps = env.showExternalDeps;
 
       # nix run .#docs
       apps.docs = env.app [] "zig build docs -- \"$@\"";
 
-      # nix run .#deps
-      apps.deps = env.showExternalDeps;
+      # nix run .#test
+      apps.test = env.app [] "zig build test -- \"$@\"";
 
       # nix run .#version
       apps.version = env.app [] "zig version";
@@ -92,15 +100,32 @@
 
       # nix develop
       devShells.default = env.mkShell {
-        # packages = with pkgs; [cowsay];
+        # jdk22 or temurin-bin
+        packages = with env.pkgs; [
+          babashka
+          cowsay
+          gnuplot
+          graphviz
+          nodejs
+          ruby
+          temurin-bin
+        ];
 
         shellHook = ''
-          echo "Gossip Glomers shell"
+          cowsay "Welcome to the Gossip Glomers shell"
+          echo "$(gnuplot --version)"
+          echo "$(bb --version)"
+          echo "$(java --version)"
+          echo "Node.js $(node --version)"
+          echo "$(ruby --version)"
           echo "Zig version $(zig version)"
+          # Graphviz version
+          echo "$(dot --version)"
 
           export FOO=bar
         '';
-        BAR = "baz";
+        DEBUG = "maelstrom:*,solution:*";
+        MAELSTROM_VERSION = "v0.2.3";
       };
     }));
 }
