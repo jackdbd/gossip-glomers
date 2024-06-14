@@ -35,6 +35,8 @@ export const message_type = z.enum([
   "echo",
   "echo_ok",
   "error",
+  "generate",
+  "generate_ok",
   "init",
   "init_ok",
   "poll",

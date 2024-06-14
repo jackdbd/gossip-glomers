@@ -1,5 +1,6 @@
 import { defAtom, defCursor } from "@thi.ng/atom";
 import { comp } from "@thi.ng/compose";
+import { uuid } from "@thi.ng/random";
 import defDebug from "debug";
 import { rl } from "./globals.js";
 import {
@@ -72,6 +73,14 @@ const defNode = () => {
           src: node_id.deref(),
           dest: req.src,
           body: { ...res_body, type: "echo_ok", echo: body.echo },
+        });
+      }
+
+      case "generate": {
+        return reply({
+          src: node_id.deref(),
+          dest: req.src,
+          body: { ...res_body, type: "generate_ok", id: uuid() },
         });
       }
 

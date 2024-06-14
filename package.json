@@ -14,7 +14,9 @@
   "scripts": {
     "maelstrom:serve": "./maelstrom/maelstrom serve",
     "sea:echo": "node sea.mjs solutions/nodejs/echo.js",
-    "solution:echo": "./maelstrom/maelstrom test -w echo --bin ./solutions/nodejs/echo.js --node-count 3 --time-limit 15"
+    "sea:unique-ids": "node sea.mjs solutions/nodejs/unique-ids.js",
+    "solution:echo": "./maelstrom/maelstrom test -w echo --bin ./solutions/nodejs/echo.js --node-count 3 --time-limit 15",
+    "solution:unique-ids": "./maelstrom/maelstrom test -w unique-ids --bin ./solutions/nodejs/unique-ids.js --availability total --nemesis partition --node-count 3 --rate 1000 --time-limit 30"
   },
   "dependencies": {
     "@thi.ng/atom": "^5.3.0",

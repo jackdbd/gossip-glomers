@@ -50,7 +50,7 @@ Your program doesn't have to be a binary. If it's a Node.js program, you just ne
 2. be able to execute that program (e.g. `chmod 755 program.js`)
 3. have the appropriate shabang at the top (e.g. `#!/usr/bin/env node`)
 
-### Babashka example
+### Babashka
 
 Test the `echo.clj` program against the `echo` workload.
 
@@ -62,7 +62,7 @@ cd maelstrom
   --node-count 1 --time-limit 10
 ```
 
-### Go example
+### Go
 
 Compile the `echo` binary.
 
@@ -82,7 +82,7 @@ cd maelstrom
   --node-count 1 --time-limit 10
 ```
 
-### Node.js example
+### Node.js
 
 Run a simple demo against the `echo.js` program.
 
@@ -90,7 +90,7 @@ Run a simple demo against the `echo.js` program.
 node solutions/nodejs/echo.js demo
 ```
 
-Test the `echo.js` program against the `echo` workload (1 node, 10 seconds).
+Test the `echo.js` solution against the `echo` workload (1 node, 10 seconds).
 
 ```sh
 ./maelstrom/maelstrom test -w echo \
@@ -98,7 +98,19 @@ Test the `echo.js` program against the `echo` workload (1 node, 10 seconds).
   --node-count 1 --time-limit 10
 ```
 
-### Node.js example (Single Executable Application)
+Test the `unique-ids.js` solution against the `unique-ids` workload.
+
+```sh
+./maelstrom/maelstrom test -w unique-ids \
+  --bin ./solutions/nodejs/unique-ids.js \
+  --availability total \
+  --nemesis partition \
+  --node-count 3 \
+  --rate 1000 \
+  --time-limit 30
+```
+
+### Node.js Single Executable Application
 
 Compile the `echo.js` program as a Node.js [Single Executable Application](https://nodejs.org/api/single-executable-applications.html).
 
@@ -117,16 +129,11 @@ Test the `echo` program against the `echo` workload (3 nodes, 15 seconds).
   --node-count 3 --time-limit 15
 ```
 
-### Ruby example
-
-Test the `echo.rb` program against the `echo` workload.
+Compile the `unique-ids.js` solution and test it against the `unique-ids` workload.
 
 ```sh
-cd maelstrom
-
-./maelstrom test -w echo \
-  --bin ./demo/ruby/echo.rb \
-  --node-count 1 --time-limit 10
+npm run sea:unique-ids
+npm run solution:unique-ids
 ```
 
 ### Zig example
@@ -158,3 +165,7 @@ In another terminal, test one of your solutions against a Maelstrom workload:
 Visit [http://localhost:8080](http://localhost:8080) in your browser to inspect the results.
 
 ![The Maelstrom web server showing a valid test run and an incomplete one](./assets/images/maelstrom-server.png)
+
+Here you can see a few messages exchanged between Maelstrom clients (`c6`, `c7`, `c8`) and Maelstrom nodes (`n0`, `n1`, `n2`). These messages were sent during a test run of the `unique-ids` Maelstrom workflow.
+
+![Maelstrom messages for the unique-ids workflow](./assets/images/maelstrom-messages-unique-ids.png)
