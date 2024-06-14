@@ -16,6 +16,7 @@
     "broadcast": "run-s --print-label broadcast:*",
     "broadcast:nodejs:test:single": "./maelstrom/maelstrom test -w broadcast --bin ./solutions/nodejs/broadcast.js --node-count 1 --time-limit 20 --rate 10",
     "broadcast:nodejs:test:multi": "./maelstrom/maelstrom test -w broadcast --bin ./solutions/nodejs/broadcast.js --node-count 5 --time-limit 20 --rate 10",
+    "broadcast:nodejs:test:fault-tolerant": "./maelstrom/maelstrom test -w broadcast --bin ./solutions/nodejs/broadcast.js --node-count 5 --time-limit 20 --rate 10 --nemesis partition",
     "broadcast:sea": "run-s --print-label broadcast:sea:*",
     "broadcast:sea:compile": "node sea.mjs solutions/nodejs/broadcast.js",
     "broadcast:sea:test:single": "./maelstrom/maelstrom test -w broadcast --bin ./solutions/nodejs-sea/broadcast --node-count 1 --time-limit 20 --rate 10",

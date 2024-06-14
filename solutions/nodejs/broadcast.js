@@ -2,11 +2,18 @@
 
 // import path from "node:path";
 // import { fileURLToPath } from "node:url";
+import { defAtom } from "@thi.ng/atom";
 import { pickRandom } from "@thi.ng/random";
 import defDebug from "debug";
 // import Piscina from "piscina";
-import { runForever, runUntil } from "../../maelstrom-js/node.js";
 import { rl } from "../../maelstrom-js/globals.js";
+import {
+  defHandlerBroadcast,
+  defHandlerInit,
+  defHandlerRead,
+  defHandlerTopology,
+} from "../../maelstrom-js/handlers/index.js";
+import { defNode } from "../../maelstrom-js/node.js";
 import { nextMessageId, makeUniqueInteger } from "../../maelstrom-js/utils.js";
 
 const debug = defDebug("solution:broadcast");
@@ -22,10 +29,26 @@ const debug = defDebug("solution:broadcast");
 const main = async () => {
   const args = process.argv.slice(2);
 
+  const state = defAtom({
+    id: "",
+    messages: new Set([]), // messages seen by this node
+    msg_id: 0,
+    peers: [],
+  });
+
+  const node = defNode({
+    handlers: {
+      init: defHandlerInit(state),
+      broadcast: defHandlerBroadcast(state),
+      read: defHandlerRead(state),
+      topology: defHandlerTopology(state),
+    },
+  });
+
   if (args[0] === "demo") {
     const demo_loop_ms = 2000;
     const demo_total_ms = 30000;
-    const node_stop_after_ms = demo_total_ms;
+    const stop_node_after_ms = demo_total_ms;
 
     const client_ids = ["c1", "c2", "c3", "c4", "c5"];
     const node_ids = ["n1", "n2", "n3"];
@@ -41,14 +64,14 @@ const main = async () => {
       topology,
       demo_loop_ms,
       demo_total_ms,
-      node_stop_after_ms,
+      stop_node_after_ms,
     });
 
     const uniqueInteger = makeUniqueInteger();
 
     // create and init each node in the network
     node_ids.forEach((node_id) => {
-      runUntil(node_stop_after_ms);
+      node.start({ stop_after_ms: stop_node_after_ms });
       // piscina.run(node_stop_after_ms, { name: "runUntil" });
 
       const init_message = {
@@ -101,7 +124,7 @@ const main = async () => {
       debug(`closed readline interface`);
     }, demo_total_ms);
   } else {
-    runForever();
+    node.start();
   }
 };
 
