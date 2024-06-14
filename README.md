@@ -169,3 +169,15 @@ Visit [http://localhost:8080](http://localhost:8080) in your browser to inspect 
 Here you can see a few messages exchanged between Maelstrom clients (`c6`, `c7`, `c8`) and Maelstrom nodes (`n0`, `n1`, `n2`). These messages were sent during a test run of the `unique-ids` Maelstrom workflow.
 
 ![Maelstrom messages for the unique-ids workflow](./assets/images/maelstrom-messages-unique-ids.png)
+
+You can find the STDERR logs (e.g. the ones created by [debug](https://github.com/debug-js/debug)) in this directory:
+
+```txt
+store/<maelstrom-workload>/<timestamp|latest>/node-logs
+```
+
+For example, the STDERR logs of the `n2` node of the `latest` run of the `unique-ids` workload will be located here:
+
+```txt
+store/unique-ids/latest/node-logs/n2.log
+```
