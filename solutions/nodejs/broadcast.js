@@ -1,63 +1,97 @@
 #!/usr/bin/env node
 
+// import path from "node:path";
+// import { fileURLToPath } from "node:url";
 import { pickRandom } from "@thi.ng/random";
 import defDebug from "debug";
+// import Piscina from "piscina";
 import { runForever, runUntil } from "../../maelstrom-js/node.js";
 import { rl } from "../../maelstrom-js/globals.js";
 import { nextMessageId, makeUniqueInteger } from "../../maelstrom-js/utils.js";
 
 const debug = defDebug("solution:broadcast");
 
+// const __filename = fileURLToPath(import.meta.url);
+// const repo_root = path.join(__filename, "..", "..", "..");
+// const filename = path.join(repo_root, "maelstrom-js", "node.js");
+
+// const piscina = new Piscina({ filename });
+
+// https://github.com/jepsen-io/maelstrom/blob/main/demo/js/gossip.js
+
 const main = async () => {
   const args = process.argv.slice(2);
 
   if (args[0] === "demo") {
     const demo_loop_ms = 2000;
-    const demo_total_ms = 15000;
-    const node_stop_after_ms = 15000;
+    const demo_total_ms = 30000;
+    const node_stop_after_ms = demo_total_ms;
 
-    debug(`demo %O`, { demo_loop_ms, demo_total_ms, node_stop_after_ms });
-    runUntil(node_stop_after_ms);
-
-    const init_message = {
-      src: "c1",
-      dest: "n1",
-      body: { type: "init", node_id: "n1", msg_id: nextMessageId() },
+    const client_ids = ["c1", "c2", "c3", "c4", "c5"];
+    const node_ids = ["n1", "n2", "n3"];
+    const topology = {
+      n1: ["n2", "n3"],
+      n2: ["n1"],
+      n3: ["n1"],
     };
-    debug(`emit init message`);
-    rl.emit("line", JSON.stringify(init_message));
+
+    debug(`demo %O`, {
+      client_ids,
+      node_ids,
+      topology,
+      demo_loop_ms,
+      demo_total_ms,
+      node_stop_after_ms,
+    });
 
     const uniqueInteger = makeUniqueInteger();
 
+    // create and init each node in the network
+    node_ids.forEach((node_id) => {
+      runUntil(node_stop_after_ms);
+      // piscina.run(node_stop_after_ms, { name: "runUntil" });
+
+      const init_message = {
+        src: pickRandom(client_ids),
+        dest: node_id,
+        body: { type: "init", node_id, msg_id: nextMessageId() },
+      };
+      debug(`${init_message.src} sends 'init' to ${init_message.dest}`);
+      rl.emit("line", JSON.stringify(init_message));
+    });
+
+    // keep sending messages until the demo is over, even if one or more nodes have stopped
     const interval_id = setInterval(() => {
+      const topology_message = {
+        src: pickRandom(client_ids),
+        dest: pickRandom(node_ids),
+        body: { type: "topology", topology },
+      };
+      debug(
+        `${topology_message.src} informs ${topology_message.dest} of topology %O`,
+        topology_message.body.topology
+      );
+      rl.emit("line", JSON.stringify(topology_message));
+
       const broadcast_message = {
-        src: pickRandom(["c1", "c2", "c3", "c4", "c5"]),
-        dest: pickRandom(["n1", "n2", "n3"]),
+        src: pickRandom(client_ids),
+        dest: pickRandom(node_ids),
         body: { type: "broadcast", message: uniqueInteger() },
       };
-      debug(`emit broadcast message`);
+      debug(
+        `${broadcast_message.src} broadcasts ${broadcast_message.body.message} to ${broadcast_message.dest}`
+      );
       rl.emit("line", JSON.stringify(broadcast_message));
 
       const read_message = {
-        src: pickRandom(["c1", "c2", "c3", "c4", "c5"]),
-        dest: pickRandom(["n1", "n2", "n3"]),
+        src: pickRandom(client_ids),
+        dest: pickRandom(node_ids),
         body: { type: "read" },
       };
-      debug(`emit read message`);
+      debug(
+        `${read_message.src} asks ${read_message.dest} to read broadcasted messages`
+      );
       rl.emit("line", JSON.stringify(read_message));
-
-      const topology = {
-        n1: ["n2", "n3"],
-        n2: ["n1"],
-        n3: ["n1"],
-      };
-      const topology_message = {
-        src: pickRandom(["c1", "c2", "c3", "c4", "c5"]),
-        dest: pickRandom(["n1", "n2", "n3"]),
-        body: { type: "topology", topology },
-      };
-      debug(`emit topology message`);
-      rl.emit("line", JSON.stringify(topology_message));
     }, demo_loop_ms);
 
     setTimeout(() => {
@@ -67,7 +101,6 @@ const main = async () => {
       debug(`closed readline interface`);
     }, demo_total_ms);
   } else {
-    debug(`run forever`);
     runForever();
   }
 };

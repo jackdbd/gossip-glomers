@@ -38,7 +38,7 @@ pub fn build(b: *std.Build) void {
 
     const exe = b.addExecutable(.{
         .name = "echo",
-        .root_source_file = b.path("src/maelstrom-echo.zig"),
+        .root_source_file = b.path("solutions/zig/echo.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -71,7 +71,7 @@ pub fn build(b: *std.Build) void {
     // const run_step = b.step("run", "Run the app");
     // run_step.dependOn(&run_cmd.step);
 
-    const run_step = b.step("challenge-1", "Run the Maelstrom echo program");
+    const run_step = b.step("echo", "Run the Maelstrom echo program");
     run_step.dependOn(&run_cmd.step);
 
     // Creates a step for unit testing. This only builds the test executable

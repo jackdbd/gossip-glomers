@@ -74,14 +74,10 @@
       # nix run .#build
       apps.build = env.app [] "zig build \"$@\"";
 
-      # nix run .#challenge-1
-      apps.challenge-1 = env.app [] "zig build challenge-1 -- \"$@\"";
-
-      # nix run .#deps
-      apps.deps = env.showExternalDeps;
-
-      # nix run .#docs
-      apps.docs = env.app [] "zig build docs -- \"$@\"";
+      # nix run .#echo
+      apps.echo = env.app [] "zig build echo -- \"$@\"";
+      # nix run .#unique-ids
+      apps.unique-ids = env.app [] "zig build unique-ids -- \"$@\"";
 
       # nix run .#test
       apps.test = env.app [] "zig build test -- \"$@\"";
@@ -124,6 +120,7 @@
 
           export FOO=bar
         '';
+        # DEBUG = "maelstrom:*,-maelstrom:utils,solution:*";
         DEBUG = "maelstrom:*,solution:*";
         MAELSTROM_VERSION = "v0.2.3";
       };

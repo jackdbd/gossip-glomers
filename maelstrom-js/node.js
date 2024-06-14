@@ -5,11 +5,12 @@ import defDebug from "debug";
 import { rl } from "./globals.js";
 import {
   defLineListener,
+  jsonStringFromObj,
   nextMessageId,
-  parseJsonString,
-  renderAsJsonString,
-  reply,
-  sendToStdout,
+  objFromJsonString,
+  response,
+  sendResponseToStdout,
+  writeToStdout,
 } from "./utils.js";
 
 const debug = defDebug("maelstrom:node");
@@ -17,8 +18,9 @@ const debug = defDebug("maelstrom:node");
 // initial state of a Maelstrom node, before it receives any messages (including an init message)
 const INITIAL_STATE = {
   id: "", //ID of this node
-  messages: [], // messages seen by this node
+  messages: new Set([]), // messages seen by this node
   msg_id: 0,
+  peers: [],
 };
 
 /**
@@ -36,11 +38,13 @@ const defNode = () => {
   const node_id = defCursor(state, ["id"]);
   const msg_id = defCursor(state, ["msg_id"]);
   const messages = defCursor(state, ["messages"]);
+  const peers = defCursor(state, ["peers"]);
   // I find swapping cursors much more convenient than swapping the entire atom.
   // const new_state = state.swapIn(["msg_id"], nextMessageId);
 
-  const handleMessage = (req) => {
-    debug(`request %O`, req);
+  const responseFromMessage = (req) => {
+    // debug(`state %O`, state.deref());
+
     const { body } = req;
 
     const res_body =
@@ -58,8 +62,31 @@ const defNode = () => {
     // using zod), since Maelstrom (or more precisely, Jepsen) already does it.
     switch (body.type) {
       case "broadcast": {
-        messages.swap((arr) => [...arr, body.message]);
-        return reply({
+        messages.swap((s) => {
+          if (!s.has(body.message)) {
+            s.add(body.message);
+          }
+          return s;
+        });
+
+        // gossip protocol: propagate values from broadcast messages to the
+        // other nodes in the cluster.
+        // https://fly.io/dist-sys/3a/
+        const src = node_id.deref();
+
+        peers.deref().forEach((dest) => {
+          // don't broadcast back to the sender
+          if (dest !== req.src) {
+            debug(`broadcast message ${src} => ${dest}`);
+            sendResponseToStdout({
+              src,
+              dest,
+              body: { ...res_body, type: "broadcast", message: body.message },
+            });
+          }
+        });
+
+        return response({
           src: node_id.deref(), // it's the same as src: state.deref().id
           dest: req.src,
           body: { ...res_body, type: "broadcast_ok" },
@@ -67,7 +94,7 @@ const defNode = () => {
       }
 
       case "echo": {
-        return reply({
+        return response({
           src: node_id.deref(),
           dest: req.src,
           body: { ...res_body, type: "echo_ok", echo: body.echo },
@@ -75,7 +102,7 @@ const defNode = () => {
       }
 
       case "generate": {
-        return reply({
+        return response({
           src: node_id.deref(),
           dest: req.src,
           body: { ...res_body, type: "generate_ok", id: uuid() },
@@ -87,7 +114,7 @@ const defNode = () => {
         // of type `init_ok`.
         // https://github.com/jepsen-io/maelstrom/blob/main/resources/protocol-intro.md#initialization
         node_id.reset(body.node_id); // it's the same as state.resetIn(["id"], body.node_id)
-        return reply({
+        return response({
           src: node_id.deref(),
           dest: req.src,
           body: { ...res_body, type: "init_ok" },
@@ -95,16 +122,20 @@ const defNode = () => {
       }
 
       case "read": {
-        return reply({
+        const sorted_messages = [...messages.deref()].sort((a, b) => a - b);
+        return response({
           src: node_id.deref(),
           dest: req.src,
-          body: { ...res_body, type: "read_ok", messages: messages.deref() },
+          body: { ...res_body, type: "read_ok", messages: sorted_messages },
         });
       }
 
       case "topology": {
-        return reply({
-          src: node_id.deref(),
+        const src = node_id.deref();
+        peers.reset(body.topology[src] || []);
+        debug(`peers of node ${src}: ${peers.deref().join(",")}`);
+        return response({
+          src,
           dest: req.src,
           body: { ...res_body, type: "topology_ok" },
         });
@@ -116,27 +147,27 @@ const defNode = () => {
     }
   };
 
-  debug(`create handler`);
   // functional composition is right to left
   const handler = comp(
     // Maelstrom nodes send messages (JSON strings) to STDOUT
-    sendToStdout,
-    renderAsJsonString,
-    handleMessage,
+    writeToStdout,
+    jsonStringFromObj,
+    responseFromMessage,
     // Maelstrom nodes receive messages (JSON strings) on STDIN
-    parseJsonString
+    objFromJsonString
   );
 
   const listener = defLineListener(handler);
+  debug(`defined 'line' event listener`);
 
   const start = () => {
-    debug(`add 'line' event listener`);
     rl.addListener("line", listener);
+    debug(`added 'line' event listener`);
   };
 
   const stop = () => {
-    debug(`remove 'line' event listener`);
     rl.removeListener("line", listener);
+    debug(`removed 'line' event listener`);
   };
 
   return { start, stop };

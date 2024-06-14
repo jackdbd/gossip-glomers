@@ -16,6 +16,9 @@ const main = async () => {
     const demo_total_ms = 15000;
     const node_stop_after_ms = 5000;
 
+    const client_ids = ["c1", "c2", "c3", "c4", "c5"];
+    const node_ids = ["n1", "n2", "n3"];
+
     debug(`demo %O`, { demo_loop_ms, demo_total_ms, node_stop_after_ms });
     runUntil(node_stop_after_ms);
 
@@ -24,18 +27,18 @@ const main = async () => {
       dest: "n1",
       body: { type: "init", node_id: "n1", msg_id: nextMessageId() },
     };
-    debug(`emit init message`);
+    debug(`${init_message.src} sends 'init' to ${init_message.dest}`);
     rl.emit("line", JSON.stringify(init_message));
 
     const interval_id = setInterval(() => {
       const echo = `hello ${pickRandom(["bob", "john", "paul"])}`;
 
       const echo_message = {
-        src: pickRandom(["c1", "c2", "c3", "c4", "c5"]),
-        dest: pickRandom(["n1", "n2", "n3"]),
+        src: pickRandom(client_ids),
+        dest: pickRandom(node_ids),
         body: { msg_id: rnd.int(), type: "echo", echo },
       };
-      debug(`emit echo message`);
+      debug(`${echo_message.src} asks ${echo_message.dest} to echo "${echo}"`);
       rl.emit("line", JSON.stringify(echo_message));
     }, demo_loop_ms);
 
