@@ -1,4 +1,5 @@
 import defDebug from "debug";
+import { rnd } from "./globals.js";
 
 const debug = defDebug("maelstrom:utils");
 
@@ -30,4 +31,15 @@ export const defLineListener = (handler) => {
 
 export const nextMessageId = (n) => {
   return n ? n + 1 : 1;
+};
+
+export const makeUniqueInteger = () => {
+  const seen = new Set();
+  return function uniqueInteger() {
+    let n = rnd.int();
+    while (seen.has(n)) {
+      n = rnd.int();
+    }
+    return n;
+  };
 };

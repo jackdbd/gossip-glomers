@@ -13,10 +13,22 @@
   "type": "module",
   "scripts": {
     "maelstrom:serve": "./maelstrom/maelstrom serve",
-    "sea:echo": "node sea.mjs solutions/nodejs/echo.js",
-    "sea:unique-ids": "node sea.mjs solutions/nodejs/unique-ids.js",
-    "solution:echo": "./maelstrom/maelstrom test -w echo --bin ./solutions/nodejs/echo.js --node-count 3 --time-limit 15",
-    "solution:unique-ids": "./maelstrom/maelstrom test -w unique-ids --bin ./solutions/nodejs/unique-ids.js --availability total --nemesis partition --node-count 3 --rate 1000 --time-limit 30"
+    "broadcast": "run-s --print-label broadcast:*",
+    "broadcast:nodejs:test:single": "./maelstrom/maelstrom test -w broadcast --bin ./solutions/nodejs/broadcast.js --node-count 1 --time-limit 20 --rate 10",
+    "broadcast:nodejs:test:multi": "./maelstrom/maelstrom test -w broadcast --bin ./solutions/nodejs/broadcast.js --node-count 5 --time-limit 20 --rate 10",
+    "broadcast:sea": "run-s --print-label broadcast:sea:*",
+    "broadcast:sea:compile": "node sea.mjs solutions/nodejs/broadcast.js",
+    "broadcast:sea:test": "./maelstrom/maelstrom test -w broadcast --bin ./solutions/nodejs-sea/broadcast --node-count 1 --time-limit 20 --rate 10",
+    "echo": "run-s --print-label echo:*",
+    "echo:nodejs:test": "./maelstrom/maelstrom test -w echo --bin ./solutions/nodejs/echo.js --node-count 3 --time-limit 15",
+    "echo:sea": "run-s --print-label echo:sea:*",
+    "echo:sea:compile": "node sea.mjs solutions/nodejs/echo.js",
+    "echo:sea:test": "./maelstrom/maelstrom test -w echo --bin ./solutions/nodejs-sea/echo --node-count 3 --time-limit 15",
+    "unique-ids": "run-s --print-label unique-ids:*",
+    "unique-ids:sea": "run-s --print-label unique-ids:sea:*",
+    "unique-ids:nodejs:test": "./maelstrom/maelstrom test -w unique-ids --bin ./solutions/nodejs/unique-ids.js --availability total --nemesis partition --node-count 3 --rate 1000 --time-limit 30",
+    "unique-ids:sea:compile": "node sea.mjs solutions/nodejs/unique-ids.js",
+    "unique-ids:sea:test": "./maelstrom/maelstrom test -w unique-ids --bin ./solutions/nodejs-sea/unique-ids --availability total --nemesis partition --node-count 3 --rate 1000 --time-limit 30"
   },
   "dependencies": {
     "@thi.ng/atom": "^5.3.0",
@@ -26,6 +38,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "esbuild": "^0.21.5"
+    "esbuild": "^0.21.5",
+    "npm-run-all": "^4.1.5"
   }
 }

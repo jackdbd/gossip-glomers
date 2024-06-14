@@ -132,8 +132,8 @@ Test the `echo` program against the `echo` workload (3 nodes, 15 seconds).
 Compile the `unique-ids.js` solution and test it against the `unique-ids` workload.
 
 ```sh
-npm run sea:unique-ids
-npm run solution:unique-ids
+npm run unique-ids:sea:compile
+npm run unique-ids:sea:test
 ```
 
 ### Zig example

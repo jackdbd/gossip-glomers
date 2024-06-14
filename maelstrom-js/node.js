@@ -16,7 +16,8 @@ const debug = defDebug("maelstrom:node");
 
 // initial state of a Maelstrom node, before it receives any messages (including an init message)
 const INITIAL_STATE = {
-  id: "",
+  id: "", //ID of this node
+  messages: [], // messages seen by this node
   msg_id: 0,
 };
 
@@ -34,6 +35,7 @@ const defNode = () => {
   const state = defAtom(INITIAL_STATE);
   const node_id = defCursor(state, ["id"]);
   const msg_id = defCursor(state, ["msg_id"]);
+  const messages = defCursor(state, ["messages"]);
   // I find swapping cursors much more convenient than swapping the entire atom.
   // const new_state = state.swapIn(["msg_id"], nextMessageId);
 
@@ -41,30 +43,26 @@ const defNode = () => {
     debug(`request %O`, req);
     const { body } = req;
 
-    const res_body = {
-      in_reply_to: body.msg_id,
-      // Each Maelstrom node takes care of creating unique message IDs for the
-      // messages it sends. For example, each node can use a monotonically
-      // increasing integer as their source of message IDs.
-      msg_id: msg_id.swap(nextMessageId),
-    };
+    const res_body =
+      body.msg_id === undefined
+        ? {}
+        : {
+            in_reply_to: body.msg_id,
+            // Each Maelstrom node takes care of creating unique message IDs for
+            // the messages it sends. For example, each node can use a
+            // monotonically increasing integer as their source of message IDs.
+            msg_id: msg_id.swap(nextMessageId),
+          };
 
     // I don't think there is any need to validate the incoming message (e.g.
     // using zod), since Maelstrom (or more precisely, Jepsen) already does it.
     switch (body.type) {
-      case "init": {
-        // In response to the init message, each node must respond with a message
-        // of type `init_ok`.
-        // https://github.com/jepsen-io/maelstrom/blob/main/resources/protocol-intro.md#initialization
-        node_id.reset(body.node_id);
-        // it's the same as:
-        // state.resetIn(["id"], body.node_id);
+      case "broadcast": {
+        messages.swap((arr) => [...arr, body.message]);
         return reply({
-          src: node_id.deref(),
-          // it's the same as:
-          // src: state.deref().id,
+          src: node_id.deref(), // it's the same as src: state.deref().id
           dest: req.src,
-          body: { ...res_body, type: "init_ok" },
+          body: { ...res_body, type: "broadcast_ok" },
         });
       }
 
@@ -84,8 +82,36 @@ const defNode = () => {
         });
       }
 
+      case "init": {
+        // In response to the init message, each node must respond with a message
+        // of type `init_ok`.
+        // https://github.com/jepsen-io/maelstrom/blob/main/resources/protocol-intro.md#initialization
+        node_id.reset(body.node_id); // it's the same as state.resetIn(["id"], body.node_id)
+        return reply({
+          src: node_id.deref(),
+          dest: req.src,
+          body: { ...res_body, type: "init_ok" },
+        });
+      }
+
+      case "read": {
+        return reply({
+          src: node_id.deref(),
+          dest: req.src,
+          body: { ...res_body, type: "read_ok", messages: messages.deref() },
+        });
+      }
+
+      case "topology": {
+        return reply({
+          src: node_id.deref(),
+          dest: req.src,
+          body: { ...res_body, type: "topology_ok" },
+        });
+      }
+
       default: {
-        return { type: "not_implemented" };
+        return { error: `message type ${body.type} not_implemented` };
       }
     }
   };
