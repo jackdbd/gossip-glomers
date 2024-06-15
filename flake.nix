@@ -120,8 +120,8 @@
 
           export FOO=bar
         '';
-        # DEBUG = "maelstrom:*,-maelstrom:utils,solution:*";
-        DEBUG = "maelstrom:*,solution:*";
+        DEBUG = "maelstrom:*,-maelstrom:handlers:read,solution:*";
+        # DEBUG = "maelstrom:*,solution:*";
         MAELSTROM_VERSION = "v0.2.3";
       };
     }));

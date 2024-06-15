@@ -12,6 +12,7 @@
  * zod), since Maelstrom—or more precisely, Jepsen—already does it.
  */
 export * from "./broadcast.js";
+export * from "./broadcast_ok.js";
 export * from "./echo.js";
 export * from "./generate.js";
 export * from "./init.js";

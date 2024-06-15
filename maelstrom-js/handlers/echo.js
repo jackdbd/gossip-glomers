@@ -1,30 +1,60 @@
 import defDebug from "debug";
-import { nextMessageId, response } from "../utils.js";
+import { nodeNotFound, preconditionFailed } from "../errors.js";
+import { nextMessageId } from "../utils.js";
 
 const debug = defDebug("maelstrom:handlers:echo");
 
-export const defHandlerEcho = (atom) => {
-  return function responseToEcho(msg) {
-    debug("node state before `echo` %O", atom.deref());
-    const current = atom.swap((old) => {
-      return {
-        ...old,
-        msg_id: nextMessageId(old.msg_id),
-      };
-    });
+export const handleEcho = ({ message, state }) => {
+  const in_reply_to = message.body.msg_id;
 
-    const { id: src, msg_id } = current;
-    debug("node state after `echo` %O", current);
+  if (!message.src) {
+    return {
+      error: nodeNotFound({
+        in_reply_to,
+        text: `message ID ${in_reply_to} has no \`src\``,
+      }),
+    };
+  }
 
-    return response({
-      src,
-      dest: msg.src,
-      body: {
-        echo: msg.body.echo,
-        in_reply_to: msg.body.msg_id,
-        msg_id,
-        type: "echo_ok",
-      },
-    });
+  if (!message.dest) {
+    return {
+      error: nodeNotFound({
+        in_reply_to,
+        text: `message ID ${in_reply_to} has no \`dest\``,
+      }),
+    };
+  }
+
+  if (!state.id) {
+    return {
+      error: preconditionFailed({
+        in_reply_to,
+        text: `node with no ID cannot handle \`echo\` messages. TIP: did you forget to initialize the node?`,
+      }),
+    };
+  }
+
+  const next_state = {
+    ...state,
+    msg_id: nextMessageId(state.msg_id),
+  };
+  // debug(`${next_state.id} next state %O`, next_state);
+
+  return {
+    value: {
+      messages: [
+        {
+          src: message.dest,
+          dest: message.src,
+          body: {
+            type: "echo_ok",
+            in_reply_to,
+            msg_id: next_state.msg_id,
+            echo: message.body.echo,
+          },
+        },
+      ],
+      state: next_state,
+    },
   };
 };

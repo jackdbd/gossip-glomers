@@ -1,31 +1,43 @@
 import { uuid } from "@thi.ng/random";
 import defDebug from "debug";
-import { nextMessageId, response } from "../utils.js";
+import { preconditionFailed } from "../errors.js";
+import { nextMessageId } from "../utils.js";
 
 const debug = defDebug("maelstrom:handlers:generate");
 
-export const defHandlerGenerate = (atom) => {
-  return function responseToGenerate(msg) {
-    debug("node state before `generate` %O", atom.deref());
-    const current = atom.swap((old) => {
-      return {
-        ...old,
-        msg_id: nextMessageId(old.msg_id),
-      };
-    });
+export const handleGenerate = ({ message, state }) => {
+  const in_reply_to = message.body.msg_id;
 
-    const { id: src, msg_id } = current;
-    debug("node state after `generate` %O", current);
+  if (!state.id) {
+    return {
+      error: preconditionFailed({
+        in_reply_to,
+        text: `node with no ID cannot handle \`generate\` messages. TIP: did you forget to initialize the node?`,
+      }),
+    };
+  }
 
-    return response({
-      src,
-      dest: msg.src,
-      body: {
-        id: uuid(),
-        in_reply_to: msg.body.msg_id,
-        msg_id,
-        type: "generate_ok",
-      },
-    });
+  const next_state = {
+    ...state,
+    msg_id: nextMessageId(state.msg_id),
+  };
+  // debug(`${next_state.id} next state %O`, next_state);
+
+  return {
+    value: {
+      messages: [
+        {
+          src: message.dest,
+          dest: message.src,
+          body: {
+            type: "generate_ok",
+            in_reply_to,
+            msg_id: next_state.msg_id,
+            id: uuid(),
+          },
+        },
+      ],
+      state: next_state,
+    },
   };
 };

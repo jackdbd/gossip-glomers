@@ -1,31 +1,52 @@
 import defDebug from "debug";
-import { nextMessageId, response } from "../utils.js";
+import { preconditionFailed } from "../errors.js";
+import { nextMessageId } from "../utils.js";
 
 const debug = defDebug("maelstrom:handlers:read");
 
-export const defHandlerRead = (atom) => {
-  return function responseToRead(msg) {
-    debug("node state before `read` %O", atom.deref());
-    const current = atom.swap((old) => {
-      return {
-        ...old,
-        msg_id: nextMessageId(old.msg_id),
-      };
-    });
+export const handleRead = ({ message, state }) => {
+  const in_reply_to = message.body.msg_id;
 
-    const { id: src, messages, msg_id } = current;
-    debug("node state after `read` %O", current);
-    const sorted_messages = [...messages].sort((a, b) => a - b);
+  if (!state.id) {
+    return {
+      error: preconditionFailed({
+        in_reply_to,
+        text: `node with no ID cannot handle \`read\` messages. TIP: did you forget to initialize the node?`,
+      }),
+    };
+  }
 
-    return response({
-      src,
-      dest: msg.src,
-      body: {
-        in_reply_to: msg.body.msg_id,
-        msg_id,
-        type: "read_ok",
-        messages: sorted_messages,
-      },
-    });
+  if (state.messages === undefined) {
+    return {
+      error: preconditionFailed({
+        in_reply_to,
+        text: `node with no messages cannot handle \`read\` messages. TIP: did you forget to initialize the node?`,
+      }),
+    };
+  }
+
+  const next_state = {
+    ...state,
+    msg_id: nextMessageId(state.msg_id),
+  };
+  // debug(`${next_state.id} next state %O`, next_state);
+
+  return {
+    value: {
+      messages: [
+        {
+          src: message.dest,
+          dest: message.src,
+          body: {
+            type: "read_ok",
+            in_reply_to,
+            msg_id: next_state.msg_id,
+            // I am not sure I need to sort the messages
+            messages: [...next_state.messages].sort((a, b) => a - b),
+          },
+        },
+      ],
+      state: next_state,
+    },
   };
 };

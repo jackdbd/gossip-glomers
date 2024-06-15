@@ -1,30 +1,47 @@
-import defDebug from "debug";
-import { nextMessageId, response } from "../utils.js";
+import { preconditionFailed } from "../errors.js";
+import { nextMessageId } from "../utils.js";
 
-const debug = defDebug("maelstrom:handlers:topology");
+export const handleTopology = ({ message, state }) => {
+  const in_reply_to = message.body.msg_id;
 
-export const defHandlerTopology = (atom) => {
-  return function responseToTopology(msg) {
-    debug("node state before `topology` %O", atom.deref());
-    const current = atom.swap((old) => {
-      return {
-        ...old,
-        msg_id: nextMessageId(old.msg_id),
-        peers: msg.body.topology[old.id] || [],
-      };
-    });
+  if (!state.id) {
+    return {
+      error: preconditionFailed({
+        in_reply_to,
+        text: `node with no ID cannot handle \`topology\` messages. TIP: did you forget to initialize the node?`,
+      }),
+    };
+  }
 
-    const { id: src, msg_id } = current;
-    debug("node state after `topology` %O", current);
+  if (message.body.topology === undefined) {
+    return {
+      error: preconditionFailed({
+        in_reply_to,
+        text: `incoming message has no \`topology\` in its body`,
+      }),
+    };
+  }
 
-    return response({
-      src,
-      dest: msg.src,
-      body: {
-        in_reply_to: msg.body.msg_id,
-        msg_id,
-        type: "topology_ok",
-      },
-    });
+  const next_state = {
+    ...state,
+    msg_id: nextMessageId(state.msg_id),
+    peers: message.body.topology[state.id] || [],
+  };
+
+  return {
+    value: {
+      messages: [
+        {
+          src: message.dest,
+          dest: message.src,
+          body: {
+            type: "topology_ok",
+            in_reply_to,
+            msg_id: next_state.msg_id,
+          },
+        },
+      ],
+      state: next_state,
+    },
   };
 };

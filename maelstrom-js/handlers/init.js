@@ -1,5 +1,6 @@
 import defDebug from "debug";
-import { nextMessageId, response } from "../utils.js";
+import { nodeNotFound, preconditionFailed } from "../errors.js";
+import { nextMessageId } from "../utils.js";
 
 const debug = defDebug("maelstrom:handlers:init");
 
@@ -8,29 +9,58 @@ const debug = defDebug("maelstrom:handlers:init");
  * `init_ok`.
  * @see [Maelstrom protocol initialization](https://github.com/jepsen-io/maelstrom/blob/main/resources/protocol-intro.md#initialization)
  */
-export const defHandlerInit = (atom) => {
-  return function responseToInit(msg) {
-    debug("node state before `init` %O", atom.deref());
 
-    const current = atom.swap((old) => {
-      return {
-        ...old,
-        id: msg.body.node_id,
-        msg_id: nextMessageId(old.msg_id),
-      };
-    });
+export const handleInit = ({ message, state }) => {
+  const in_reply_to = message.body.msg_id;
 
-    const { id: src, msg_id } = current;
-    debug("node state after `init` %O", current);
+  if (!message.src) {
+    return {
+      error: nodeNotFound({
+        in_reply_to,
+        text: `message ID ${in_reply_to} has no \`src\``,
+      }),
+    };
+  }
 
-    return response({
-      src,
-      dest: msg.src,
-      body: {
-        in_reply_to: msg.body.msg_id,
-        msg_id,
-        type: "init_ok",
-      },
-    });
+  if (!message.dest) {
+    return {
+      error: nodeNotFound({
+        in_reply_to,
+        text: `message ID ${in_reply_to} has no \`dest\``,
+      }),
+    };
+  }
+
+  if (state.id) {
+    return {
+      error: preconditionFailed({
+        in_reply_to,
+        text: `node has already an ID, so cannot handle \`init\` messages. TIP: you probably already initialized this node`,
+      }),
+    };
+  }
+
+  const next_state = {
+    ...state,
+    id: message.body.node_id,
+    msg_id: nextMessageId(state.msg_id),
+  };
+  // debug(`${next_state.id} next state %O`, next_state);
+
+  return {
+    value: {
+      messages: [
+        {
+          src: message.dest,
+          dest: message.src,
+          body: {
+            type: "init_ok",
+            in_reply_to,
+            msg_id: next_state.msg_id,
+          },
+        },
+      ],
+      state: next_state,
+    },
   };
 };

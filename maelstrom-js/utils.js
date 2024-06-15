@@ -54,3 +54,33 @@ export const makeUniqueInteger = () => {
     return n;
   };
 };
+
+export const stripKeys = ({ input, keys }) => {
+  const stripped = [];
+  const obj = Object.entries(input)
+    .map(([key, val]) => {
+      if (keys.includes(key)) {
+        stripped.push(key);
+        return undefined;
+      } else {
+        return { [key]: val };
+      }
+    })
+    .filter((d) => d)
+    .reduce((acc, cv) => {
+      return { ...acc, ...cv };
+    }, {});
+
+  return obj ? { obj, stripped } : { obj: {}, stripped };
+};
+
+export const defLogState = (options = {}) => {
+  const exclude_keys = options.exclude_keys || ["gossip_interval_id"];
+
+  return function logState(state, label = "") {
+    const { obj, stripped } = stripKeys({ input: state, keys: exclude_keys });
+    debug(`${label} %O (not logged: ${stripped.join(", ")})`, obj);
+  };
+};
+
+export const logState = defLogState();
